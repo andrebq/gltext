@@ -1,46 +1,41 @@
 // Copyright 2012 The go-gl Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-
-package gltext
+package driver
 
 import (
 	"code.google.com/p/freetype-go/freetype"
 	"code.google.com/p/freetype-go/freetype/truetype"
 	"github.com/go-gl/glh"
+	"github.com/go-gl/gltext"
 	"image"
 	"io"
 	"io/ioutil"
 )
 
-// http://www.freetype.org/freetype2/docs/tutorial/step2.html
+func init() {
+	gltext.RegisterDriver("freetype-go", LoadTruetype)
+	gltext.RegisterDriver("default", LoadTruetype)
+}
 
-// LoadTruetype loads a truetype font from the given stream and 
-// applies the given font scale in points.
-//
-// The low and high values determine the lower and upper rune limits
-// we should load for this font. For standard ASCII this would be: 32, 127.
-//
-// The dir value determines the orientation of the text we render
-// with this font. This should be any of the predefined Direction constants.
-func LoadTruetype(r io.Reader, scale int32, low, high rune, dir Direction) (*Font, error) {
+func LoadTruetype(r io.Reader, scale int32, low, high rune, dir gltext.Direction) (*gltext.FontConfig, *image.RGBA, error) {
 	data, err := ioutil.ReadAll(r)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	// Read the truetype font.
 	ttf, err := truetype.Parse(data)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	// Create our FontConfig type.
-	var fc FontConfig
+	var fc gltext.FontConfig
 	fc.Dir = dir
 	fc.Low = low
 	fc.High = high
-	fc.Glyphs = make(Charset, high-low+1)
+	fc.Glyphs = make(gltext.Charset, high-low+1)
 
 	// Create an image, large enough to store all requested glyphs.
 	//
@@ -100,5 +95,5 @@ func LoadTruetype(r io.Reader, scale int32, low, high rune, dir Direction) (*Fon
 		gi++
 	}
 
-	return loadFont(img, &fc)
+	return &fc, img, err
 }
